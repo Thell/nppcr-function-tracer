@@ -4,12 +4,13 @@
 ## Author:          Thell Fowler
 ## File:            LoadModuleConfig.ps1
 ## Usage:           Called from the NestedModules value from a module manifest.
-## Version:         1.0.1.0
+## Version:         1.0.1.1
 ## Purpose:         Provides automated loading of local configuration data.
 ##
 ## Requirements:    PowerShell Version 2
-## Last Updated:    01/25/2010
+## Last Updated:    01/31/2010
 ## History:
+##					1.0.1.1 01/31/2010 - Add Description and example.
 ##					1.0.1.0 01/25/2010 - Force use of cliXML for adding members.
 ##					1.0.0.0 01/21/2010 - Initial implementation.
 ##
@@ -17,6 +18,16 @@
 ################################################################################
 
 <#
+.Description
+	Module aware local user configuration settings generator, loader, and exporter
+	that invokes during module import.  Unlike the module manifiest PrivateData
+	field this config was created for storing user/project settings that would
+	not likely change with new module versions (like default param values the
+	user would get tired of passing).
+
+	Instead of doing xml creation and parsing manually it uses PS built-in CliXml.
+
+.Example
 	To make use of this script use new-modulemanifest to create a manifest named
 	the with the same name as the manifest you are loading data for but with an
 	extension of 'config.psd1'

@@ -43,7 +43,7 @@
 		<View>
 			<Name>FuncGuardInfo</Name>
 			<ViewSelectedBy>
-					<TypeName>FuncGuardInfo</TypeName>
+				<TypeName>FuncGuardInfo</TypeName>
 			</ViewSelectedBy>
 			<ListControl>
 				<ListEntries>
@@ -58,14 +58,11 @@
 							<ListItem>
 								<PropertyName>Usage</PropertyName>
 							</ListItem>
-								<ListItem>
-									<PropertyName>HeaderMacro</PropertyName>
-								</ListItem>
 							<ListItem>
-								<Label>FullDescription</Label>
-								<ScriptBlock>
-									$OFS = "`n"; "$($_.FullDescription)"
-								</ScriptBlock>
+								<PropertyName>HeaderMacro</PropertyName>
+							</ListItem>
+							<ListItem>
+								<PropertyName>FullDescription</PropertyName>
 							</ListItem>
 						</ListItems>
 					</ListEntry>
