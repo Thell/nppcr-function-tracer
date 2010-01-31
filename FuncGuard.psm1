@@ -79,23 +79,26 @@ function New-FuncGuardProject {
 				all defined function guards available to the file.
 	
 	.PARAMETER Name
-		[string] Used to identify the project within the configuration settings.
+		Used to identify the project within the configuration settings.
 
 	.PARAMETER Prefix
-		[string] The default prefix used in the C++ Preprocessor MACRO.
+		The default prefix used in the C++ Preprocessor MACRO.
 
 	.PARAMETER Path
-		[string] Path to the function guard source files directory. Will default to current path.
+		Path to the function guard source files directory. Will default to current path.
+
+	.PARAMETER Force
+		Override normal parameter validation for project name.  Typically
+		this is just used internally to initialize built-in configurations loaded
+		from the module.
 #>
 	[CmdletBinding(DefaultParameterSetName="Validate")]
 	
 	PARAM(
-		[Parameter(ParameterSetName="Validate",Mandatory=$false,Position=0,
-			HelpMessage="`nUse normal parameter validation for project name.")]
+		[Parameter(ParameterSetName="Validate",Mandatory=$false,Position=0)]
 		[Switch]$Validate
 	,
-		[Parameter(ParameterSetName="Force",Mandatory=$false,Position=0,
-			HelpMessage="`nForces acceptance of project name for initialization of builtin configurations.")]
+		[Parameter(ParameterSetName="Force",Mandatory=$false,Position=0)]
 		[Switch]$Force
 	,
 		[Parameter(ParameterSetName="Validate", Mandatory=$true, Position=1,
@@ -178,13 +181,13 @@ function Add-FuncGuardProject {
 			-path "$NPPCR_ROOT\PowerEditor\src\MISC\Debug\" 
 	
 	.PARAMETER Name
-		[string] Used to identify the project within the configuration settings.
+		Used to identify the project within the configuration settings.
 
 	.PARAMETER Prefix
-		[string] The default prefix used in the C++ Preprocessor MACRO.
+		The default prefix used in the C++ Preprocessor MACRO.
 
 	.PARAMETER Path
-		[string] Path to the function guard source files directory. Will default to current path.
+		Path to the function guard source files directory. Will default to current path.
 #>
 	[CmdletBinding()]
 	param(
@@ -209,7 +212,8 @@ function Add-FuncGuardProject {
 	Process {
 		$TargetFiles = @("FuncGuards.h", "FuncGuards_skel.h", "FuncGuards.cpp","FuncGuardsImport.h")
 		foreach ($file in $TargetFiles) {
-			if (!  (Get-ChildItem "$($Path)\$($file)" -ea 0)) {
+			$testPath = Join-Path -Path $Path -ChildPath $file
+			if (!  (Get-ChildItem -Path $testPath -ea 0)) {
 				try {
 					New-FuncGuardProject -Name $Name -Prefix $Prefix -Path $Path
 				}
@@ -422,7 +426,7 @@ function Add-FuncGuard {
 	BEGIN {
 		$OFS = [Environment]::NewLine
 		$FuncGuardFiles = Get-FuncGuardSourceFiles -Source -SourcePath $Path
-		if ($FuncGuardFiles.Get_Item("ActiveHeader") -eq $Null) {
+		if ($FuncGuardFiles.item("ActiveHeader") -eq $Null) {
 			throw (New-Object IO.FileNotFoundException $Path"\FuncGuards.h")
 		}
 
@@ -483,7 +487,7 @@ function Add-FuncGuard {
 
 			foreach ($key in $FuncGuardFiles.keys) {
 				$ContentModified = $false
-				[string]$FileText = Get-Content $FuncGuardFiles.Get_Item($key)
+				[string]$FileText = Get-Content $FuncGuardFiles.item($key)
 				
 				switch ($key) {
 					"ActiveHeader" {
@@ -505,7 +509,7 @@ function Add-FuncGuard {
 				
 				if ($ContentModified) {
 					$UpdateSkeleton = $true
-					Set-Content -Path $FuncGuardFiles.Get_Item($key) `
+					Set-Content -Path $FuncGuardFiles.item($key) `
 						-Value $NewFileText
 				}
 			}
@@ -556,8 +560,7 @@ function Get-FuncGuard {
 		[string]
 		$Path = $(Get-FuncGuardProjectPath)
 	,
-		[Parameter(Position=2, Mandatory=$False,
-			HelpMessage="`nOverride the default of using the active FuncGuards.h")]
+		[Parameter(Position=2, Mandatory=$False)]
 		[switch]
 		$Skeleton
 	)
@@ -863,12 +866,12 @@ function Remove-FuncGuard {
 		catch {
 			throw $_
 		}
-		if ($FuncGuardFiles.Get_Item("ActiveHeader") -eq $Null) {
+		if ($FuncGuardFiles.item("ActiveHeader") -eq $Null) {
 			throw (New-Object IO.FileNotFoundException $Path"\FuncGuards.h")
 		}
 	}
 	Process{
-		$FuncGuard = @(Get-FuncGuard -Path $FuncGuardFiles.Get_Item("ActiveHeader"))
+		$FuncGuard = @(Get-FuncGuard -Path $FuncGuardFiles.item("ActiveHeader"))
 		$FuncGuardRemoved = $null
 
 		foreach ($guard in $FuncGuard) {
@@ -909,7 +912,7 @@ function Remove-FuncGuard {
 
 				foreach ($key in $FuncGuardFiles.keys) {
 					$ContentModified = $false
-					[string]$FileText = Get-Content $FuncGuardFiles.Get_Item($key)
+					[string]$FileText = Get-Content $FuncGuardFiles.item($key)
 					
 					switch ($key) {
 						"ActiveHeader" {
@@ -933,7 +936,7 @@ function Remove-FuncGuard {
 					}
 					
 					if ($ContentModified) {
-						Set-Content -Path $FuncGuardFiles.Get_Item($key) `
+						Set-Content -Path $FuncGuardFiles.item($key) `
 							-Value $NewFileText
 					}
 				}
@@ -971,20 +974,23 @@ function Update-FuncGuardFiles {
 		Deafults to the active Function Guard project path.
 	.PARAMETER TemplatePath
 		Path to the function guard template files directory.
+	.PARAMETER All
+		Update both the skeleton and template files.
+	.PARAMETER Skeleton
+		Update only the skeleton header.
+	.PARAMETER Template
+		Update only the template header files.
 #>
 	[CmdletBinding(DefaultParameterSetName="Skeleton", SupportsShouldProcess=$true)]
 	
 	PARAM(
-		[Parameter(ParameterSetName="All",Mandatory=$false,Position=0,
-			HelpMessage="`nUpdate both the skeleton and template files.")]
+		[Parameter(ParameterSetName="All",Mandatory=$false,Position=0)]
 		[Switch]$All
 	,
-		[Parameter(ParameterSetName="Skeleton",Mandatory=$false,Position=0,
-			HelpMessage="`nUpdate only the skeleton header.")]
+		[Parameter(ParameterSetName="Skeleton",Mandatory=$false,Position=0)]
 		[Switch]$Skeleton
 	,
-		[Parameter(ParameterSetName="Template",Mandatory=$false,Position=0,
-			HelpMessage="`nUpdate only the template header files.")]
+		[Parameter(ParameterSetName="Template",Mandatory=$false,Position=0)]
 		[Switch]$Template
 	,
 		[Parameter(Position=1,Mandatory=$false,
@@ -1024,8 +1030,8 @@ function Update-FuncGuardFiles {
 		}
 		
 		try {
-			if ($SourceFiles.Get_Item("ActiveHeader") -ne $Null) {
-				$FuncGuard = @(Get-FuncGuard -Path $SourceFiles.Get_Item("ActiveHeader"))
+			if ($SourceFiles.item("ActiveHeader") -ne $Null) {
+				$FuncGuard = @(Get-FuncGuard -Path $SourceFiles.item("ActiveHeader"))
 			} else {
 					throw (New-Object IO.FileNotFoundException $Path"\FuncGuards.h")
 			}
@@ -1035,10 +1041,10 @@ function Update-FuncGuardFiles {
 		}
 	}
 	Process{
-		$ActiveHeader = $SourceFiles.Get_Item("ActiveHeader")
+		$ActiveHeader = $SourceFiles.item("ActiveHeader")
 		$TargetFile = @()
 		if ( $Skeleton ) {
-			$TargetFile += @($SourceFiles.Get_Item("SkeletonHeader"))
+			$TargetFile += @($SourceFiles.item("SkeletonHeader"))
 		}
 		if ( $Template ) {
 			$TargetFile += @($TemplateFiles.values)
@@ -1046,7 +1052,7 @@ function Update-FuncGuardFiles {
 
 		$ActiveGuards = @(Get-FuncGuard -Path $ActiveHeader)
 		foreach ($file in $TargetFile) {
-			if ( $file -eq $SourceFiles.Get_Item("SkeletonHeader") ) {
+			if ( $file -eq $SourceFiles.item("SkeletonHeader") ) {
 				$fileGuards = @(Get-FuncGuard -Skeleton -Path $file -ea 0)
 			} else {
 				$fileGuards = @(Get-FuncGuard -Path $file -ea 0)
@@ -1359,19 +1365,18 @@ function initializeModule {
 	if ( $PSUnit ) {
 		Set-FuncGuardProject -Name "PSUnit"
 	} else {
-		Export-ModuleMember New-FuncGuardProject
-		Export-ModuleMember Add-FuncGuardProject
-		Export-ModuleMember Set-FuncGuardProject
-		Export-ModuleMember Get-FuncGuardProject
-		Export-ModuleMember Remove-FuncGuardProject
-
-		Export-ModuleMember Add-FuncGuard
-		Export-ModuleMember Get-FuncGuard
-		Export-ModuleMember Enable-FuncGuard
-		Export-ModuleMember Disable-FuncGuard
-		Export-ModuleMember Remove-FuncGuard
-		
-		Export-ModuleMember Update-FuncGuardFiles
+		Export-ModuleMember -Function `
+			New-FuncGuardProject,
+			Add-FuncGuardProject,
+			Set-FuncGuardProject,
+			Get-FuncGuardProject,
+			Remove-FuncGuardProject,
+			Add-FuncGuard,
+			Get-FuncGuard,
+			Enable-FuncGuard,
+			Disable-FuncGuard,
+			Remove-FuncGuard,
+			Update-FuncGuardFiles
 	}
 }
 
